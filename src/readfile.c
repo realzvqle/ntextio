@@ -3,11 +3,10 @@
 
 
 
-char* readFile(HANDLE fileHandle){
+char* readFile(HANDLE fileHandle, returnStats* stats){
     IO_STATUS_BLOCK ioStatusBlock;
     char* buffer = (char*)malloc(MAX_PATH);
     if(!buffer){
-        perror("Failed Memory Allocating The Buffer\n");
         return NULL;
     }
     char secondaryBuffer[MAX_PATH];
@@ -22,9 +21,20 @@ char* readFile(HANDLE fileHandle){
                                 &byteOffset, 
                                 NULL);
     if(!NT_SUCCESS(status)){
-        wprintf(L"NtReadFile Failed With NTSTATUS 0x%X\n", status);
+        if(stats == NULL) goto SKIP;
+        stats->ioStats = ioStatusBlock;
+        stats->status = status;
+        stats->didFail = TRUE;
+        stats->handle = fileHandle;
+SKIP:
         return NULL;
     }
     strcpy(buffer, secondaryBuffer);
+    if(stats == NULL) goto SECONDSKIP;
+    stats->ioStats = ioStatusBlock;
+    stats->status = status;
+    stats->didFail = FALSE;
+    stats->handle = fileHandle;
+SECONDSKIP:
     return buffer;
 }

@@ -1,7 +1,7 @@
 #include "headers/createFile.h"
 #include <winternl.h>
 
-wchar_t* getDir() {
+static wchar_t* getDir() {
     TCHAR buffer[MAX_PATH];
     DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
 
@@ -11,7 +11,7 @@ wchar_t* getDir() {
     }
 
     mbstowcs(path, buffer, length);
-    path[length] = L'\0';  // Null-terminate the string
+    path[length] = L'\0';  
 
     if (path[length - 1] != L'\\') {
         wcscat(path, L"\\");
@@ -20,10 +20,9 @@ wchar_t* getDir() {
     return path;
 }
 
-// Rest of your code remains unchanged
 
-HANDLE createFile(CHAR* filename) {
-    DbgPrint("PCHAR Format, ...");
+returnStats createFile(CHAR* filename) {
+    returnStats returnStatus;
     WCHAR buffer[MAX_PATH];
     if (filename[1] == ':') {
         swprintf(buffer, sizeof(buffer) / sizeof(buffer[0]), L"\\??\\%hs\0\\", filename);
@@ -34,7 +33,6 @@ HANDLE createFile(CHAR* filename) {
         free(path);  
     }
 
-    wprintf(L"Path is %ls\n", buffer); 
     UNICODE_STRING objectName;
     RtlInitUnicodeString(&objectName, buffer);
     OBJECT_ATTRIBUTES obj;
@@ -58,16 +56,20 @@ HANDLE createFile(CHAR* filename) {
     );
 
     if (!NT_SUCCESS(createFileStatus)) {
-        wprintf(L"NtCreateFile failed with status 0x%X\n", createFileStatus);
         NtClose(fHandle);
-        return NULL;
+        returnStatus.didFail = TRUE;
+        returnStatus.status = createFileStatus;
+        returnStatus.handle = NULL;
+        return returnStatus;
     }
-
-    return fHandle;
+    returnStatus.didFail = FALSE;
+    returnStatus.status = createFileStatus;
+    returnStatus.handle = fHandle;
+    return returnStatus;
 }
 
-HANDLE openFile(CHAR* filename) {
-    DbgPrint("PCHAR Format, ...");
+returnStats openFile(CHAR* filename) {
+    returnStats returnStatus;
     WCHAR buffer[MAX_PATH];
     if (filename[1] == ':') {
         swprintf(buffer, sizeof(buffer) / sizeof(buffer[0]), L"\\??\\%hs\0\\", filename);
@@ -101,10 +103,14 @@ HANDLE openFile(CHAR* filename) {
     );
 
     if (!NT_SUCCESS(createFileStatus)) {
-        wprintf(L"NtCreateFile failed with status 0x%X\n", createFileStatus);
         NtClose(fHandle);
-        return NULL;
+        returnStatus.didFail = TRUE;
+        returnStatus.status = createFileStatus;
+        returnStatus.handle = NULL;
+        return returnStatus;
     }
-
-    return fHandle;
+    returnStatus.didFail = FALSE;
+    returnStatus.status = createFileStatus;
+    returnStatus.handle = fHandle;
+    return returnStatus;
 }

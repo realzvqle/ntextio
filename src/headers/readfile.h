@@ -3,5 +3,4 @@
 #include "ntfunc.h"
 
 
-
-char* readFile(HANDLE fileHandle);
+char* readFile(HANDLE fileHandle, returnStats* stats);

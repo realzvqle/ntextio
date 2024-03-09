@@ -25,8 +25,6 @@ void ntPrint(PCHAR Format, ...){
 char* ntGet(char* ask){
     ntPut(ask);
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-    char* buffer = readFile(hStdin);
-    CloseHandle(hStdin);
-
+    char* buffer = readFile(hStdin, NULL);
     return buffer;
 }

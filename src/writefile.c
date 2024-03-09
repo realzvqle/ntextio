@@ -2,7 +2,8 @@
 #include "headers/createFile.h"
 
 
-IO_STATUS_BLOCK writeFile(HANDLE fileHandle, char* content, BOOL isRewrite){
+returnStats writeFile(HANDLE fileHandle, char* content, BOOL isRewrite){
+    returnStats stats;
     char buffer[MAX_PATH];
     IO_STATUS_BLOCK ioStatusBlock;
     LARGE_INTEGER byteOffset = { 0 };
@@ -13,8 +14,10 @@ IO_STATUS_BLOCK writeFile(HANDLE fileHandle, char* content, BOOL isRewrite){
         if (NT_SUCCESS(queryStatus)) {
             byteOffset.QuadPart = fileInfo.EndOfFile.QuadPart;
         } else {
-            wprintf(L"NtQueryInformationFile Failed With NTSTATUS 0x%X\n", queryStatus);
-            return ioStatusBlock;
+            stats.didFail = TRUE;
+            stats.status = queryStatus;
+            stats.ioStats = ioStatusBlock;
+            return stats;
         }
     } else {
         byteOffset.QuadPart = 0;
@@ -43,11 +46,15 @@ IO_STATUS_BLOCK writeFile(HANDLE fileHandle, char* content, BOOL isRewrite){
                                 NULL);
     if(!NT_SUCCESS(status)){
         if(status == 0xC0000034){
-            HANDLE file = createFile("file.txt");
-            if(!file){
-                return ioStatusBlock;
+            returnStats file = createFile("file.txt");
+            if(!file.handle){
+                stats.didFail = TRUE;
+                stats.ioStats = ioStatusBlock;
+                stats.status = status;
+                stats.handle = file.handle;
+                return stats;
             }
-            status = NtWriteFile(file, 
+            status = NtWriteFile(file.handle, 
                                 NULL, 
                                 NULL, 
                                 NULL, 
@@ -57,12 +64,21 @@ IO_STATUS_BLOCK writeFile(HANDLE fileHandle, char* content, BOOL isRewrite){
                                 &byteOffset, 
                                 NULL);
             if(!NT_SUCCESS(status)){
-                wprintf(L"NtWriteFile Failed With NTSTATUS 0x%X\n", status);
-                return ioStatusBlock;
+                stats.didFail = TRUE;
+                stats.ioStats = ioStatusBlock;
+                stats.status = status;
+                stats.handle = file.handle;
+                return stats;
             }
         }
-        wprintf(L"NtWriteFile Failed With NTSTATUS 0x%X\n", status);
-        return ioStatusBlock;
+        stats.didFail = FALSE;
+
+        stats.ioStats = ioStatusBlock;
+        stats.status = status;
+        return stats;
     }
-    return ioStatusBlock;
+    stats.didFail = FALSE;
+    stats.ioStats = ioStatusBlock;
+    stats.status = status;
+    return stats;
 }

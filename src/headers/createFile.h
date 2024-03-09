@@ -3,5 +3,5 @@
 
 
 
-HANDLE createFile(CHAR* filename);
-HANDLE openFile(CHAR* filename);
+returnStats createFile(CHAR* filename);
+returnStats openFile(CHAR* filename);
